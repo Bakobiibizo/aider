@@ -307,7 +307,7 @@ Do this:
 ```
 
 """
-            coder.partial_response_function_call = dict()
+            coder.partial_response_function_call = {}
 
         coder.send = MagicMock(side_effect=mock_send)
 

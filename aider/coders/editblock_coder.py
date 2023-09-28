@@ -24,8 +24,7 @@ class EditBlockCoder(Coder):
             if not full_path:
                 continue
             content = self.io.read_text(full_path)
-            content = do_replace(full_path, content, original, updated)
-            if content:
+            if content := do_replace(full_path, content, original, updated):
                 self.io.write_text(full_path, content)
                 edited.add(path)
                 continue
@@ -78,10 +77,10 @@ def try_dotdotdots(whole, part, replace):
 
     pairs = zip(part_pieces, replace_pieces)
     for part, replace in pairs:
-        if not part and not replace:
-            continue
+        if not part:
+            if not replace:
+                continue
 
-        if not part and replace:
             if not whole.endswith("\n"):
                 whole += "\n"
             whole += replace
@@ -109,12 +108,14 @@ def replace_part_with_missing_leading_whitespace(whole, part, replace):
         return
 
     for i in range(len(whole_lines) - len(part_lines) + 1):
-        leading_whitespace = ""
-        for j, c in enumerate(whole_lines[i]):
-            if c == part_lines[0][0]:
-                leading_whitespace = whole_lines[i][:j]
-                break
-
+        leading_whitespace = next(
+            (
+                whole_lines[i][:j]
+                for j, c in enumerate(whole_lines[i])
+                if c == part_lines[0][0]
+            ),
+            "",
+        )
         if not leading_whitespace or not all(c.isspace() for c in leading_whitespace):
             continue
 
@@ -237,13 +238,11 @@ def do_replace(fname, content, before_text, after_text, fence=None):
     if content is None:
         return
 
-    if not before_text.strip():
-        # append to existing file, or start a new file
-        new_content = content + after_text
-    else:
-        new_content = replace_most_similar_chunk(content, before_text, after_text)
-
-    return new_content
+    return (
+        content + after_text
+        if not before_text.strip()
+        else replace_most_similar_chunk(content, before_text, after_text)
+    )
 
 
 ORIGINAL = "<<<<<<< ORIGINAL"
@@ -252,7 +251,9 @@ UPDATED = ">>>>>>> UPDATED"
 
 separators = "|".join([ORIGINAL, DIVIDER, UPDATED])
 
-split_re = re.compile(r"^((?:" + separators + r")[ ]*\n)", re.MULTILINE | re.DOTALL)
+split_re = re.compile(
+    f"^((?:{separators}" + r")[ ]*\n)", re.MULTILINE | re.DOTALL
+)
 
 
 def find_original_update_blocks(content):

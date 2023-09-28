@@ -88,8 +88,7 @@ class EditBlockFunctionCoder(Coder):
             return self.partial_response_content
 
         args = self.parse_partial_args()
-        res = json.dumps(args, indent=4)
-        return res
+        return json.dumps(args, indent=4)
 
     def update_files(self):
         name = self.partial_response_function_call.get("name")
@@ -124,8 +123,7 @@ class EditBlockFunctionCoder(Coder):
             if not full_path:
                 continue
             content = self.io.read_text(full_path)
-            content = do_replace(full_path, content, original, updated)
-            if content:
+            if content := do_replace(full_path, content, original, updated):
                 self.io.write_text(full_path, content)
                 edited.add(path)
                 continue

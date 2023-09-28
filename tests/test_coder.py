@@ -105,7 +105,7 @@ class TestCoder(unittest.TestCase):
 
         # Mock the git repo
         mock = MagicMock()
-        mock.return_value = set(["file1.txt", "file2.py"])
+        mock.return_value = {"file1.txt", "file2.py"}
         coder.repo.get_tracked_files = mock
 
         # Call the check_for_file_mentions method
@@ -149,7 +149,7 @@ class TestCoder(unittest.TestCase):
         coder = Coder.create(models.GPT4, None, mock_io)
 
         mock = MagicMock()
-        mock.return_value = set(["file1.txt", "file2.py"])
+        mock.return_value = {"file1.txt", "file2.py"}
         coder.repo.get_tracked_files = mock
 
         # Call the check_for_file_mentions method
@@ -180,13 +180,13 @@ class TestCoder(unittest.TestCase):
             other_fname.touch()
 
             mock = MagicMock()
-            mock.return_value = set([str(fname), str(other_fname)])
+            mock.return_value = {str(fname), str(other_fname)}
             coder.repo.get_tracked_files = mock
 
             # Call the check_for_file_mentions method
             coder.check_for_file_mentions(f"Please check {fname}!")
 
-            self.assertEqual(coder.abs_fnames, set([str(fname.resolve())]))
+            self.assertEqual(coder.abs_fnames, {str(fname.resolve())})
 
     def test_check_for_subdir_mention(self):
         with GitTemporaryDirectory():
@@ -198,14 +198,14 @@ class TestCoder(unittest.TestCase):
             fname.touch()
 
             mock = MagicMock()
-            mock.return_value = set([str(fname)])
+            mock.return_value = {str(fname)}
             coder.repo.get_tracked_files = mock
 
             dump(fname)
             # Call the check_for_file_mentions method
             coder.check_for_file_mentions(f"Please check `{fname}`")
 
-            self.assertEqual(coder.abs_fnames, set([str(fname.resolve())]))
+            self.assertEqual(coder.abs_fnames, {str(fname.resolve())})
 
     def test_run_with_file_deletion(self):
         # Create a few temporary files
@@ -225,7 +225,7 @@ class TestCoder(unittest.TestCase):
 
         def mock_send(*args, **kwargs):
             coder.partial_response_content = "ok"
-            coder.partial_response_function_call = dict()
+            coder.partial_response_function_call = {}
 
         coder.send = MagicMock(side_effect=mock_send)
 
@@ -251,7 +251,7 @@ class TestCoder(unittest.TestCase):
 
         def mock_send(*args, **kwargs):
             coder.partial_response_content = "ok"
-            coder.partial_response_function_call = dict()
+            coder.partial_response_function_call = {}
 
         coder.send = MagicMock(side_effect=mock_send)
 
@@ -281,7 +281,7 @@ class TestCoder(unittest.TestCase):
 
         def mock_send(*args, **kwargs):
             coder.partial_response_content = "ok"
-            coder.partial_response_function_call = dict()
+            coder.partial_response_function_call = {}
 
         coder.send = MagicMock(side_effect=mock_send)
 
@@ -310,7 +310,7 @@ class TestCoder(unittest.TestCase):
 
         def mock_send(*args, **kwargs):
             coder.partial_response_content = "ok"
-            coder.partial_response_function_call = dict()
+            coder.partial_response_function_call = {}
 
         coder.send = MagicMock(side_effect=mock_send)
 

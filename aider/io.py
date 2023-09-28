@@ -64,8 +64,7 @@ class AutoCompleter(Completer):
                 candidates = self.commands.get_commands()
                 candidates = [(cmd, cmd) for cmd in candidates]
             else:
-                for completion in self.commands.get_command_completions(words[0][1:], words[-1]):
-                    yield completion
+                yield from self.commands.get_command_completions(words[0][1:], words[-1])
                 return
         else:
             candidates = self.words
@@ -75,8 +74,7 @@ class AutoCompleter(Completer):
         last_word = words[-1]
         for word_match, word_insert in candidates:
             if word_match.lower().startswith(last_word.lower()):
-                rel_fnames = self.fname_to_rel_fnames.get(word_match, [])
-                if rel_fnames:
+                if rel_fnames := self.fname_to_rel_fnames.get(word_match, []):
                     for rel_fname in rel_fnames:
                         yield Completion(
                             f"`{rel_fname}`", start_position=-len(last_word), display=rel_fname
@@ -159,7 +157,7 @@ class InputOutput:
 
     def get_input(self, root, rel_fnames, addable_rel_fnames, commands):
         if self.pretty:
-            style = dict(style=self.user_input_color) if self.user_input_color else dict()
+            style = dict(style=self.user_input_color) if self.user_input_color else {}
             self.console.rule(**style)
         else:
             print()
@@ -233,11 +231,7 @@ class InputOutput:
 
     def user_input(self, inp):
         prefix = "####"
-        if inp:
-            hist = inp.splitlines()
-        else:
-            hist = ["<blank>"]
-
+        hist = inp.splitlines() if inp else ["<blank>"]
         hist = f"  \n{prefix} ".join(hist)
 
         hist = f"""
@@ -258,7 +252,7 @@ class InputOutput:
         elif self.yes is False:
             res = "no"
         else:
-            res = prompt(question + " ", default=default)
+            res = prompt(f"{question} ", default=default)
 
         hist = f"{question.strip()} {res.strip()}"
         self.append_chat_history(hist, linebreak=True, blockquote=True)
@@ -277,7 +271,7 @@ class InputOutput:
         elif self.yes is False:
             res = "no"
         else:
-            res = prompt(question + " ", default=default)
+            res = prompt(f"{question} ", default=default)
 
         hist = f"{question.strip()} {res.strip()}"
         self.append_chat_history(hist, linebreak=True, blockquote=True)
@@ -294,7 +288,7 @@ class InputOutput:
             self.append_chat_history(hist, linebreak=True, blockquote=True)
 
         message = Text(message)
-        style = dict(style=self.tool_error_color) if self.tool_error_color else dict()
+        style = dict(style=self.tool_error_color) if self.tool_error_color else {}
         self.console.print(message, **style)
 
     def tool_output(self, *messages, log_only=False):
@@ -305,13 +299,13 @@ class InputOutput:
 
         if not log_only:
             messages = list(map(Text, messages))
-            style = dict(style=self.tool_output_color) if self.tool_output_color else dict()
+            style = dict(style=self.tool_output_color) if self.tool_output_color else {}
             self.console.print(*messages, **style)
 
     def append_chat_history(self, text, linebreak=False, blockquote=False):
         if blockquote:
             text = text.strip()
-            text = "> " + text
+            text = f"> {text}"
         if linebreak:
             text = text.rstrip()
             text = text + "  \n"

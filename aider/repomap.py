@@ -54,7 +54,7 @@ def fname_to_components(fname, with_colon):
     path_components = fname.split(os.sep)
     res = [pc + os.sep for pc in path_components[:-1]]
     if with_colon:
-        res.append(path_components[-1] + ":")
+        res.append(f"{path_components[-1]}:")
     else:
         res.append(path_components[-1])
     return res
@@ -96,11 +96,7 @@ class RepoMap:
         self.max_map_tokens = map_tokens
         self.has_ctags = self.check_for_ctags()
 
-        if map_tokens > 0 and self.has_ctags:
-            self.use_ctags = True
-        else:
-            self.use_ctags = False
-
+        self.use_ctags = bool(map_tokens > 0 and self.has_ctags)
         self.tokenizer = tiktoken.encoding_for_model(main_model.name)
         self.repo_content_prefix = repo_content_prefix
 
@@ -111,11 +107,7 @@ class RepoMap:
 
         files_listing, ctags_msg = res
 
-        if chat_files:
-            other = "other "
-        else:
-            other = ""
-
+        other = "other " if chat_files else ""
         if self.repo_content_prefix:
             repo_content = self.repo_content_prefix.format(
                 other=other,
@@ -169,7 +161,7 @@ class RepoMap:
 
     def split_path(self, path):
         path = os.path.relpath(path, self.root)
-        return [path + ":"]
+        return [f"{path}:"]
 
     def run_ctags(self, filename):
         # Check if the file is in the cache and if the modification time has not changed
@@ -269,24 +261,23 @@ class RepoMap:
     def get_name_identifiers_uncached(self, fname):
         content = self.io.read_text(fname)
         if content is None:
-            return list()
+            return []
 
         try:
             lexer = guess_lexer_for_filename(fname, content)
         except ClassNotFound:
-            return list()
+            return []
 
         # lexer.get_tokens_unprocessed() returns (char position in file, token type, token string)
         tokens = list(lexer.get_tokens_unprocessed(content))
-        res = [token[2] for token in tokens if token[1] in Token.Name]
-        return res
+        return [token[2] for token in tokens if token[1] in Token.Name]
 
     def get_ranked_tags(self, chat_fnames, other_fnames):
         defines = defaultdict(set)
         references = defaultdict(list)
         definitions = defaultdict(set)
 
-        personalization = dict()
+        personalization = {}
 
         fnames = set(chat_fnames).union(set(other_fnames))
         chat_rel_fnames = set()
@@ -312,7 +303,7 @@ class RepoMap:
 
                 last = name
                 if signature:
-                    last += " " + signature
+                    last += f" {signature}"
 
                 res = [rel_fname]
                 if scope:
@@ -321,7 +312,7 @@ class RepoMap:
 
                 key = (rel_fname, ident)
                 definitions[key].add(tuple(res))
-                # definitions[key].add((rel_fname,))
+                        # definitions[key].add((rel_fname,))
 
             idents = self.get_name_identifiers(fname, uniq=False)
             for ident in idents:
@@ -343,7 +334,7 @@ class RepoMap:
         if personalization:
             pers_args = dict(personalization=personalization, dangling=personalization)
         else:
-            pers_args = dict()
+            pers_args = {}
 
         try:
             ranked = nx.pagerank(G, weight="weight", **pers_args)
@@ -369,11 +360,11 @@ class RepoMap:
                 continue
             ranked_tags += list(definitions.get((fname, ident), []))
 
-        rel_other_fnames_without_tags = set(
+        rel_other_fnames_without_tags = {
             os.path.relpath(fname, self.root) for fname in other_fnames
-        )
+        }
 
-        fnames_already_included = set(rt[0] for rt in ranked_tags)
+        fnames_already_included = {rt[0] for rt in ranked_tags}
 
         top_rank = sorted([(rank, node) for (node, rank) in ranked.items()], reverse=True)
         for rank, fname in top_rank:
@@ -389,7 +380,7 @@ class RepoMap:
 
     def get_ranked_tags_map(self, chat_fnames, other_fnames=None):
         if not other_fnames:
-            other_fnames = list()
+            other_fnames = []
 
         ranked_tags = self.get_ranked_tags(chat_fnames, other_fnames)
         num_tags = len(ranked_tags)
@@ -419,17 +410,16 @@ def find_py_files(directory):
 
     py_files = []
     for root, dirs, files in os.walk(directory):
-        for file in files:
-            if file.endswith(".py"):
-                py_files.append(os.path.join(root, file))
+        py_files.extend(
+            os.path.join(root, file) for file in files if file.endswith(".py")
+        )
     return py_files
 
 
 def get_random_color():
     hue = random.random()
     r, g, b = [int(x * 255) for x in colorsys.hsv_to_rgb(hue, 1, 0.75)]
-    res = f"#{r:02x}{g:02x}{b:02x}"
-    return res
+    return f"#{r:02x}{g:02x}{b:02x}"
 
 
 if __name__ == "__main__":

@@ -140,8 +140,7 @@ class GitRepo:
         if not args:
             args = ["HEAD"]
 
-        diffs = self.repo.git.diff(*args)
-        return diffs
+        return self.repo.git.diff(*args)
 
     def show_diffs(self, pretty):
         diffs = self.get_diffs(pretty)
@@ -158,20 +157,16 @@ class GitRepo:
 
         files = []
         if commit:
-            for blob in commit.tree.traverse():
-                if blob.type == "blob":  # blob is a file
-                    files.append(blob.path)
-
+            files.extend(
+                blob.path for blob in commit.tree.traverse() if blob.type == "blob"
+            )
         # Add staged files
         index = self.repo.index
         staged_files = [path for path, _ in index.entries.keys()]
 
         files.extend(staged_files)
 
-        # convert to appropriate os.sep, since git always normalizes to /
-        res = set(str(Path(PurePosixPath(path))) for path in files)
-
-        return res
+        return {str(Path(PurePosixPath(path))) for path in files}
 
     def is_dirty(self):
         return self.repo.is_dirty()
